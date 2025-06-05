@@ -2,7 +2,7 @@
   "name": "phpislan-getter-setter",
   "displayName": "PHP Getter Setter Generator",
   "description": "Generate getter and setter methods for PHP classes",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "publisher": "mtriwardanaa",
   "engines": {
     "vscode": "^1.100.0"
@@ -50,6 +50,6 @@
     "@vscode/test-electron": "^2.5.2",
     "eslint": "^9.25.1",
     "typescript": "^5.8.3",
-    "vsce": "^1.97.0"
+    "vsce": "^2.15.0"
   }
 }

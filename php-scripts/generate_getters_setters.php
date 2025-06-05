@@ -22,20 +22,29 @@ if (!class_exists($className)) {
 }
 
 $reflector = new ReflectionClass($className);
+$existingMethods = array_map(fn($m) => $m->getName(), $reflector->getMethods());
 
 $getters = '';
 $setters = '';
 
-foreach ($reflector->getProperties(ReflectionProperty::IS_PROTECTED) as $property) {
+foreach ($reflector->getProperties() as $property) {
     if ($property->getDeclaringClass()->getName() !== $className) {
         continue;
     }
+
+    if ($property->isStatic()) {
+        continue;
+    }
+
     $name = $property->getName();
     $type = $property->getType();
     $nullable = $type?->allowsNull() ?? false;
     $typeName = $type ? $type->getName() : 'mixed';
     $returnType = $nullable ? "?$typeName" : $typeName;
     $docReturnType = $nullable ? "$typeName|null" : $typeName;
+    $paramType = $nullable ? "?$typeName" : $typeName;
+    $paramDocType = $nullable ? "$typeName|null" : $typeName;
+
     $methodNameGet = 'get' . ucfirst($name);
     $methodNameSet = 'set' . ucfirst($name);
 
@@ -49,9 +58,6 @@ foreach ($reflector->getProperties(ReflectionProperty::IS_PROTECTED) as $propert
     }
 
     if ($mode === 'Setter' || $mode === 'Getter + Setter') {
-        $paramType = $nullable ? "?$typeName" : $typeName;
-        $paramDocType = $nullable ? "$typeName|null" : $typeName;
-
         $setters .= "
     public function $methodNameSet($paramType \$$name): self
     {
