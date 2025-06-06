@@ -19,7 +19,36 @@
         "command": "phpislan-getter-setter.generate",
         "title": "Generate PHP Getter/Setter"
       }
-    ]
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "when": "editorLangId == php",
+          "command": "phpislan-getter-setter.generate",
+          "group": "navigation"
+        }
+      ]
+    },
+    "configuration": {
+      "type": "object",
+      "title": "PHP Getter Setter Generator Settings",
+      "properties": {
+        "phpGetterSetterGenerator.phpPath": {
+          "type": "string",
+          "default": "php",
+          "description": "Set where is your php path located"
+        },
+        "phpGetterSetterGenerator.generatorMode": {
+          "type": "string",
+          "enum": [
+            "php",
+            "ts"
+          ],
+          "default": "php",
+          "description": "Set the generator mode (php or ts)"
+        }
+      }
+    }
   },
   "repository": {
     "type": "git",
