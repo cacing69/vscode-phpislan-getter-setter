@@ -16,3 +16,11 @@ export const findInsertionPosition = (fullClass: string): number => {
     const closingBraceIndex = fullClass.lastIndexOf('}');
     return closingBraceIndex !== -1 ? closingBraceIndex : fullClass.length;
 };
+
+export const extractProperties = (classBody: string): Array<{ visibility: string; rawDeclaration: string }> => {
+    const propRegex = /(private|protected|public)\s+([$\w\?\s]+\$[\w]+)/g;
+    return Array.from(classBody.matchAll(propRegex)).map(m => ({
+        visibility: m[1],
+        rawDeclaration: m[2].trim()
+    }));
+};

@@ -2,7 +2,8 @@ import * as vscode from 'vscode';
 import { exec } from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
-import { findInsertionPosition } from './utils/utils';
+import { extractProperties, findInsertionPosition } from './utils/utils';
+import { generateMethods } from './utils/tsGenerator';
 
 // default config for extension
 const CONFIG_KEY = "phpGetterSetterGenerator";
@@ -45,7 +46,7 @@ export function activate(context: vscode.ExtensionContext) {
 
         const generatorMode = config.get<string>("generatorMode");
 
-        const enableComment = config.get<boolean>("enableComment");
+        const enableComment = config.get<boolean>("enableComment", false);
 
         const pilihan = await vscode.window.showQuickPick(
             ['Getter', 'Setter', 'Getter + Setter'],
@@ -126,7 +127,7 @@ export function activate(context: vscode.ExtensionContext) {
             });
         } else if (generatorMode === `ts`) {
 
-            // Cari semua class
+            // Cari class
             const classRegex = /class\s+(\w+)\s*{([^}]*)}/gs;
             const matches = [...text.matchAll(classRegex)];
 
@@ -137,64 +138,30 @@ export function activate(context: vscode.ExtensionContext) {
 
             const edit = new vscode.WorkspaceEdit();
 
-            matches.forEach(match => {
+            for (const match of matches) {
                 const fullClass = match[0];
-                // const className = match[1];
                 const classBody = match[2];
 
-                const propRegex = /(private|protected|public)\s+([$\w\?\s]+\$[\w]+)/g;
-                let props = Array.from(classBody.matchAll(propRegex)).map(m => ({
-                    visibility: m[1],
-                    rawDeclaration: m[2].trim()
-                }));
-
-                if (props.length === 0) {return;}
+                const props = extractProperties(classBody);
+                if (props.length === 0) { continue; }
 
                 props.forEach(prop => {
                     const { visibility, rawDeclaration } = prop;
                     const nameMatch = rawDeclaration.match(/\$(\w+)/);
-                    if (!nameMatch) {return;}
+                    if (!nameMatch) { return; }
 
                     const name = nameMatch[1];
                     const typePart = rawDeclaration.replace(/\$(\w+)/, '').trim();
-                    const ucFirst = name.charAt(0).toUpperCase() + name.slice(1);
-                    const getterName = `get${ucFirst}`;
-                    const setterName = `set${ucFirst}`;
 
-                    let insertText = ``;
-
-                    if (generateGetter) {
-
-                        const isNullable = typePart.startsWith('?');
-                        const returnType = isNullable ? typePart.slice(1).trim() : typePart.trim();
-
-                        const getterBody = isNullable
-                            ? `return $this->${name} ?? null;`
-                            : `return $this->${name};`;
-
-                        const getterComment = `\n    /**\n     * @return ${visibility} ${typePart} $${name}\n     */`;
-
-                        const getter = `\n    public function ${getterName}(): ${typePart}\n    {\n        ${getterBody}\n    }\n`;
-
-                        insertText += enableComment ? `${getterComment + getter}` : getter;
-                    }
-
-                    if (generateSetter) {
-
-                        const setterComment = `\n    /**\n     * @param ${visibility} ${typePart} $${name}\n     * @return self\n     */`;
-
-                        const setter = `\n    public function ${setterName}(${typePart} $${name}): self\n    {\n        $this->${name} = $${name};\n        return $this;\n    }\n`;
-                        insertText += enableComment ? `${setterComment + setter}` : setter;
-                    }
+                    const { getter, setter } = generateMethods(name, typePart, visibility, enableComment, generateGetter, generateSetter);
 
                     const insertionPos = findInsertionPosition(fullClass);
+                    const insertionOffset = document.positionAt(document.getText().indexOf(fullClass) + insertionPos);
 
-                    const classStartIndex = text.indexOf(fullClass);
-                    const insertionOffset = classStartIndex + insertionPos;
-
-                    edit.insert(document.uri, new vscode.Position(document.positionAt(insertionOffset).line, 0), insertText);
+                    if (getter) { edit.insert(document.uri, insertionOffset, getter); }
+                    if (setter) { edit.insert(document.uri, insertionOffset, setter); }
                 });
-            });
+            }
 
             vscode.workspace.applyEdit(edit).then(() => {
                 vscode.window.showInformationMessage('Getter and Setter generated successfully!');
@@ -206,4 +173,4 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(disposable);
 }
 
-export function deactivate() {}
+export function deactivate() { }
