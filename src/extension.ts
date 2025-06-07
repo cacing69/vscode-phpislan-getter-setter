@@ -128,7 +128,7 @@ export function activate(context: vscode.ExtensionContext) {
         } else if (generatorMode === `ts`) {
 
             // Cari class
-            const classRegex = /class\s+(\w+)\s*{([^}]*)}/gs;
+            const classRegex = /class\s+(\w+)(?:\s+extends\s+[\w\\]+)?(?:\s+implements\s+[\w\\]+(?:\s*,\s*[\w\\]+)*)?\s*{([^}]*)}/gs;
             const matches = [...text.matchAll(classRegex)];
 
             if (matches.length === 0) {
