@@ -45,6 +45,8 @@ export function activate(context: vscode.ExtensionContext) {
 
         const generatorMode = config.get<string>("generatorMode");
 
+        const enableComment = config.get<boolean>("enableComment");
+
         const pilihan = await vscode.window.showQuickPick(
             ['Getter', 'Setter', 'Getter + Setter'],
             { placeHolder: 'Pilih jenis method yang ingin digenerate' }
@@ -162,13 +164,27 @@ export function activate(context: vscode.ExtensionContext) {
                     let insertText = ``;
 
                     if (generateGetter) {
-                        const getter = `\n    /**\n     * @return ${visibility} ${typePart} $${name}\n     */\n    public function ${getterName}(): ${typePart.includes('?') ? typePart : typePart}\n    {\n        return $this->${name};\n    }\n`;
-                        insertText += getter;
+
+                        const isNullable = typePart.startsWith('?');
+                        const returnType = isNullable ? typePart.slice(1).trim() : typePart.trim();
+
+                        const getterBody = isNullable
+                            ? `return $this->${name} ?? null;`
+                            : `return $this->${name};`;
+
+                        const getterComment = `\n    /**\n     * @return ${visibility} ${typePart} $${name}\n     */`;
+
+                        const getter = `\n    public function ${getterName}(): ${typePart}\n    {\n        ${getterBody}\n    }\n`;
+
+                        insertText += enableComment ? `${getterComment + getter}` : getter;
                     }
 
                     if (generateSetter) {
-                        const setter = `\n    /**\n     * @param ${visibility} ${typePart} $${name}\n     * @return self\n     */\n    public function ${setterName}(${typePart} $${name}): self\n    {\n        $this->${name} = $${name};\n        return $this;\n    }\n`;
-                        insertText += setter;
+
+                        const setterComment = `\n    /**\n     * @param ${visibility} ${typePart} $${name}\n     * @return self\n     */`;
+
+                        const setter = `\n    public function ${setterName}(${typePart} $${name}): self\n    {\n        $this->${name} = $${name};\n        return $this;\n    }\n`;
+                        insertText += enableComment ? `${setterComment + setter}` : setter;
                     }
 
                     const insertionPos = findInsertionPosition(fullClass);

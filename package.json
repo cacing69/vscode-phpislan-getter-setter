@@ -46,6 +46,11 @@
           ],
           "default": "php",
           "description": "Set the generator mode (php or ts)"
+        },
+        "phpGetterSetterGenerator.enableComment": {
+          "type": "boolean",
+          "default": false,
+          "description": "Add comment (docblock) to generated getter and setter methods"
         }
       }
     }
